@@ -1,0 +1,54 @@
+body {
+    font-family: Arial, sans-serif;
+    background-color: #f0f2f5;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    background-color: #031106;
+    color: white;
+}
+
+
+textarea {
+    width: 100%;
+    border: 1px solid #ccc;
+    border-radius: 20px;
+    padding: 10px;
+    resize: none;
+    font-family: inherit;
+    font-size: 14px;
+}
+
+
+.profile-image {
+    width: 100px; /* Adjust the size as needed */
+    height: 100px; /* Adjust the size as needed */
+    border-radius: 50%;
+    object-fit: cover; /* Ensures the image covers the container properly */
+}
+
+.logo-image {
+    border-radius: 50%;
+    object-fit: cover; /* Ensures the image covers the container properly */
+}
+.icon {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    background-color: red;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: relative;
+}
+
+.icon-checkmark {
+    width: 20px;
+    height: 10px;
+    border-left: 3px solid white;
+    border-bottom: 3px solid white;
+    transform: rotate(-45deg);
+    position: absolute;
+}
