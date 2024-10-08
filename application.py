@@ -7,20 +7,21 @@ from flask_session import Session
 from helpers import apology, login_required, lookup, usd, is_int
 from werkzeug.security import check_password_hash, generate_password_hash
 
-app = Flask(__name__)
+application = Flask(__name__)
 
 # Ensure templates are auto-reloaded
-app.config["TEMPLATES_AUTO_RELOAD"] = True
+application.config["TEMPLATES_AUTO_RELOAD"] = True
 
 # Custom filter
 # app.jinja_env.filters["usd"] = usd
 
 # Configure session to use filesystem (instead of signed cookies)
-app.config["SESSION_PERMANENT"] = False
-app.config["SESSION_TYPE"] = "filesystem"
-Session(app)
+application.config["SESSION_PERMANENT"] = False
+application.config["SESSION_TYPE"] = "filesystem"
+Session(application)
 
 db = SQL("sqlite:///social.db")
+
 
 def time_ago(diff):
     seconds = diff.total_seconds()
@@ -44,7 +45,8 @@ def time_ago(diff):
         months = int(seconds // 2419200)
         return f"{months} month{'s' if months > 1 else ''} ago"
 
-@app.route("/", methods=["GET", "POST"])
+
+@application.route("/", methods=["GET", "POST"])
 @login_required
 def index():
     if request.method == "GET":
@@ -56,22 +58,26 @@ def index():
         # looping through the posts
         for aPost in posts:
             # t will go through it and find if there are comments,
-            comment = db.execute("SELECT Post.ID as postID, Comment.userID, content, Comment.createdDate FROM Post JOIN Comment ON Post.ID = Comment.postID WHERE postID = ?", aPost["postID"])
+            comment = db.execute(
+                "SELECT Post.ID as postID, Comment.userID, content, Comment.createdDate FROM Post JOIN Comment ON Post.ID = Comment.postID WHERE postID = ?", aPost["postID"])
             if comment:
                 # if there's a comment(s), then generate
                 for c in comment:
-                    userInfo = db.execute("SELECT name, imageUrl FROM User WHERE ID = ?", c["userID"])
+                    userInfo = db.execute(
+                        "SELECT name, imageUrl FROM User WHERE ID = ?", c["userID"])
                     c["userName"] = userInfo[0]['name']
                     c["avatar"] = userInfo[0]['imageUrl']
                     # calculate comment time
                     # 2024-08-09 01:47:52
-                    createDate = datetime.strptime(c["createdDate"], '%Y-%m-%d %H:%M:%S').replace(tzinfo=timezone.utc)
+                    createDate = datetime.strptime(
+                        c["createdDate"], '%Y-%m-%d %H:%M:%S').replace(tzinfo=timezone.utc)
                     diff = datetime.now(timezone.utc) - createDate
                     c["timeElapse"] = time_ago(diff)
 
                 comments.append(comment)
             # calculate post time, still in the for loop
-            aPost["timeElapse"] = time_ago(datetime.now(timezone.utc) -  datetime.strptime(aPost["postDate"], '%Y-%m-%d %H:%M:%S').replace(tzinfo=timezone.utc))
+            aPost["timeElapse"] = time_ago(datetime.now(timezone.utc) - datetime.strptime(
+                aPost["postDate"], '%Y-%m-%d %H:%M:%S').replace(tzinfo=timezone.utc))
         print("Comment: ", comments)
         # print("CurrentTime", )
         return render_template("index.html", posts=posts, comments=comments)
@@ -81,39 +87,44 @@ def index():
         userId = session["user_id"]
 
 
-
-@app.route("/profile", methods=["GET", "POST"])
+@application.route("/profile", methods=["GET", "POST"])
 def profile():
     if request.method == "GET":
-        user = db.execute("SELECT name, email FROM User WHERE ID =  ?", session["user_id"])
+        user = db.execute(
+            "SELECT name, email FROM User WHERE ID =  ?", session["user_id"])
 
-        user_info = db.execute(" SELECT * FROM User INNER JOIN Profile ON User.ID=Profile.UserID WHERE User.ID = ?", session["user_id"])
+        user_info = db.execute(
+            " SELECT * FROM User INNER JOIN Profile ON User.ID=Profile.UserID WHERE User.ID = ?", session["user_id"])
         print(user_info)
         username = user_info[0]["username"]
         image_url = user_info[0]["PfpUrl"]
 
-        followings = db.execute(" SELECT * FROM Followers WHERE FollowerID = ?", session["user_id"])
-        followers = db.execute(" SELECT * FROM Followers WHERE FollowingID = ?", session["user_id"])
+        followings = db.execute(
+            " SELECT * FROM Followers WHERE FollowerID = ?", session["user_id"])
+        followers = db.execute(
+            " SELECT * FROM Followers WHERE FollowingID = ?", session["user_id"])
         # print(followings)
         # print(len(followings))
         print(followers)
         # friends = min(len(followings), len(followers))
 
-
         return render_template("profile.html", username=username, image_url=image_url)
 
 
-@app.route("/friends", methods=["GET", "POST"])
+@application.route("/friends", methods=["GET", "POST"])
 def friendPage():
     if request.method == "GET":
-        followingUsers = db.execute("SELECT * FROM Followers JOIN Profile ON Followers.FollowerID = Profile.UserID WHERE FollowingID =  ?", session["user_id"])
+        followingUsers = db.execute(
+            "SELECT * FROM Followers JOIN Profile ON Followers.FollowerID = Profile.UserID WHERE FollowingID =  ?", session["user_id"])
         # print(followingUsers)
 
-        followerUsers = db.execute("SELECT * FROM Followers JOIN Profile ON Followers.FollowingID = Profile.UserID WHERE FollowerID =  ?", session["user_id"])
+        followerUsers = db.execute(
+            "SELECT * FROM Followers JOIN Profile ON Followers.FollowingID = Profile.UserID WHERE FollowerID =  ?", session["user_id"])
         print(followerUsers)
     return render_template("friends.html", followingUsers=followingUsers, followerUsers=followerUsers)
 
-@app.route("/login", methods=["GET", "POST"])
+
+@application.route("/login", methods=["GET", "POST"])
 def signIn():
     """Log user in"""
 
@@ -132,7 +143,8 @@ def signIn():
             return apology("must provide password", 403)
 
         # Query database for username
-        rows = db.execute("SELECT * FROM User WHERE handler = ?", request.form.get("handler"))
+        rows = db.execute("SELECT * FROM User WHERE handler = ?",
+                          request.form.get("handler"))
 
         # Ensure username exists and password is correct
         if len(rows) != 1 or not check_password_hash(rows[0]["password"], request.form.get("password")):
@@ -173,7 +185,8 @@ def signIn():
     # print("Pass Input before: ", password)
     # return render_template("login.html")
 
-@app.route("/register", methods=["GET", "POST"])
+
+@application.route("/register", methods=["GET", "POST"])
 def register():
     """Register user"""
 
@@ -206,8 +219,10 @@ def register():
             return apology("username already exist", 400)
         else:
 
-            hashcode = generate_password_hash(password, method='pbkdf2:sha256', salt_length=8)
-            db.execute("INSERT INTO User (handler, password, name, email) VALUES(?, ?, ?, ?)", username, hashcode, name, email)
+            hashcode = generate_password_hash(
+                password, method='pbkdf2:sha256', salt_length=8)
+            db.execute("INSERT INTO User (handler, password, name, email) VALUES(?, ?, ?, ?)",
+                       username, hashcode, name, email)
 
         # Redirect user to home page
         return redirect("/")
@@ -215,3 +230,10 @@ def register():
     else:
         return render_template("register.html")
 
+
+# run the application.
+if __name__ == "__main__":
+    # Setting debug to True enables debug output. This line should be
+    # removed before deploying a production application.
+    application.debug = True
+    application.run()
