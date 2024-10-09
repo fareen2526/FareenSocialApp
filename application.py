@@ -53,7 +53,7 @@ def index():
         # For My Posts feature
         # posts = db.execute("SELECT * FROM Post JOIN Song ON Post.songID = Song.ID WHERE userID = ?", session["user_id"])
         posts = db.execute("SELECT Post.ID as postID, Post.imageUrl as imageUrl, User.ID as userID, User.handler, Song.songName, Song.songUrl, Post.createdDate as postDate FROM Post JOIN Song, User ON Post.songID = Song.ID AND User.ID = Post.userID")
-        print("Post: ", posts)
+        # print("Post in INDEX: ", posts)
         comments = []
         # looping through the posts
         for aPost in posts:
@@ -90,25 +90,46 @@ def index():
 @application.route("/profile", methods=["GET", "POST"])
 def profile():
     if request.method == "GET":
-        user = db.execute(
-            "SELECT name, email FROM User WHERE ID =  ?", session["user_id"])
+        postsFromDB = db.execute("SELECT Post.ID as postID, Post.title as postTitle, Post.imageUrl as imageUrl, User.ID as userID, User.handler, Song.songName, Song.songUrl, Post.createdDate as postDate FROM Post JOIN Song, User ON Post.songID = Song.ID AND User.ID = Post.userID WHERE Post.userID = ?", session["user_id"])
 
+        print("Posts in Profile: ", postsFromDB)
         user_info = db.execute(
-            " SELECT * FROM User INNER JOIN Profile ON User.ID=Profile.UserID WHERE User.ID = ?", session["user_id"])
-        print(user_info)
-        username = user_info[0]["username"]
-        image_url = user_info[0]["PfpUrl"]
+            "SELECT name, email, handler, imageUrl FROM User WHERE ID =  ?", session["user_id"])
+
+        # print("CURRENT USER :", user)
+        # user_info = db.execute(
+            # " SELECT * FROM User INNER JOIN Profile ON User.ID=Profile.UserID WHERE User.ID = ?", session["user_id"])
+        # print("USER INFO :", user_info)
+        username = user_info[0]["handler"]
+        image_url = user_info[0]["imageUrl"]
+
+        if not image_url:
+            image_url = "../static/avatar.jpeg"
+
 
         followings = db.execute(
             " SELECT * FROM Followers WHERE FollowerID = ?", session["user_id"])
         followers = db.execute(
             " SELECT * FROM Followers WHERE FollowingID = ?", session["user_id"])
-        # print(followings)
-        # print(len(followings))
-        print(followers)
-        # friends = min(len(followings), len(followers))
 
-        return render_template("profile.html", username=username, image_url=image_url)
+        return render_template("profile.html", username=username, image_url=image_url, posts=postsFromDB)
+    else:
+        songUrl = request.form.get("post-songLink")
+        slashCounter = 0
+        firstIndex = 0
+        secondIndex = 0
+        for index, char in enumerate(songUrl):
+            if slashCounter < 5 and char == "/":
+                slashCounter += 1
+                firstIndex = index + 1
+            if char == "?":
+                secondIndex = index - 1
+        print(f"Index: 1: {firstIndex} - 2:{secondIndex}")
+        print(f"CHAR: 1: {songUrl[firstIndex]} - 2:{songUrl[secondIndex]}")
+
+        songId = songUrl[firstIndex:secondIndex+1]
+
+        return render_template("profile.html")
 
 
 @application.route("/friends", methods=["GET", "POST"])
