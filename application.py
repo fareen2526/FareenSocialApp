@@ -50,47 +50,96 @@ def time_ago(diff):
 @login_required
 def index():
     if request.method == "GET":
-        # For My Posts feature
-        # posts = db.execute("SELECT * FROM Post JOIN Song ON Post.songID = Song.ID WHERE userID = ?", session["user_id"])
-        posts = db.execute("SELECT Post.ID as postID, Post.imageUrl as imageUrl, User.ID as userID, User.handler, Song.songName, Song.songUrl, Post.createdDate as postDate FROM Post JOIN Song, User ON Post.songID = Song.ID AND User.ID = Post.userID")
-        # print("Post in INDEX: ", posts)
-        comments = []
-        # looping through the posts
-        for aPost in posts:
-            # t will go through it and find if there are comments,
-            comment = db.execute(
-                "SELECT Post.ID as postID, Comment.userID, content, Comment.createdDate FROM Post JOIN Comment ON Post.ID = Comment.postID WHERE postID = ?", aPost["postID"])
-            if comment:
-                # if there's a comment(s), then generate
-                for c in comment:
-                    userInfo = db.execute(
-                        "SELECT name, imageUrl FROM User WHERE ID = ?", c["userID"])
-                    c["userName"] = userInfo[0]['name']
-                    c["avatar"] = userInfo[0]['imageUrl']
-                    # calculate comment time
-                    # 2024-08-09 01:47:52
-                    createDate = datetime.strptime(
-                        c["createdDate"], '%Y-%m-%d %H:%M:%S').replace(tzinfo=timezone.utc)
-                    diff = datetime.now(timezone.utc) - createDate
-                    c["timeElapse"] = time_ago(diff)
+        # Fetch all posts with associated comments (if any), regardless of the user who posted them
+        posts_with_comments = db.execute(
+            """
+            SELECT 
+                Post.ID as postID, 
+                Post.imageUrl as imageUrl, 
+                Post.createdDate as postDate, 
+                User.ID as userID, 
+                User.handler, 
+                Song.songName, 
+                Song.songUrl, 
+                Comment.userID as commentUserID, 
+                Comment.content as commentContent, 
+                Comment.createdDate as commentCreatedDate,
+                U.name as commentUserName,
+                U.imageUrl as commentAvatar
+            FROM Post 
+            JOIN Song ON Post.songID = Song.ID 
+            JOIN User ON Post.userID = User.ID
+            LEFT JOIN Comment ON Post.ID = Comment.postID
+            LEFT JOIN User U ON Comment.userID = U.ID
+            """
+        )
 
-                comments.append(comment)
-            # calculate post time, still in the for loop
-            aPost["timeElapse"] = time_ago(datetime.now(timezone.utc) - datetime.strptime(
-                aPost["postDate"], '%Y-%m-%d %H:%M:%S').replace(tzinfo=timezone.utc))
-        print("Comment: ", comments)
-        # print("CurrentTime", )
-        return render_template("index.html", posts=posts, comments=comments)
+        posts = []
+        comments_by_post = {}
 
-    else:
-        commentInput = request.form.get("commentInput")
-        userId = session["user_id"]
+        # Process the results into a structured dictionary
+        for row in posts_with_comments:
+            # Prepare the post details
+            if not any(p["postID"] == row["postID"] for p in posts):
+                posts.append({
+                    "postID": row["postID"],
+                    "imageUrl": row["imageUrl"],
+                    "userID": row["userID"],
+                    "handler": row["handler"],
+                    "songName": row["songName"],
+                    "songUrl": row["songUrl"],
+                    "postDate": row["postDate"],
+                    "timeElapse": time_ago(datetime.now(timezone.utc) - datetime.strptime(
+                        row["postDate"], '%Y-%m-%d %H:%M:%S').replace(tzinfo=timezone.utc))
+                })
+
+            # If the post has comments, add them to a dictionary based on postID
+            # Ensuring the comment exists (non-null content)
+            if row["commentContent"]:
+                comment = {
+                    "commentUserID": row["commentUserID"],
+                    "content": row["commentContent"],
+                    "createdDate": row["commentCreatedDate"],
+                    "userName": row["commentUserName"],
+                    "avatar": row["commentAvatar"],
+                    "timeElapse": time_ago(datetime.now(timezone.utc) - datetime.strptime(
+                        row["commentCreatedDate"], '%Y-%m-%d %H:%M:%S').replace(tzinfo=timezone.utc))
+                }
+
+                # Collect the comments by postID
+                if row["postID"] not in comments_by_post:
+                    comments_by_post[row["postID"]] = []
+                comments_by_post[row["postID"]].append(comment)
+
+        # Pass comments grouped by post
+        return render_template("index.html", posts=posts, comments=comments_by_post)
+
+    if request.method == "POST":
+        # Handle comment submission
+        comment_content = request.form.get("commentInput")
+        post_id = request.form.get("postID")  # postID hidden field from form
+
+        print(comment_content + " ----- " + post_id)
+        if comment_content and post_id:
+            # Assuming user is logged in and user_id is in session
+            user_id = session["user_id"]
+
+            # Insert the new comment into the database
+            db.execute(
+                "INSERT INTO Comment (postID, userID, content, createdDate) VALUES (?, ?, ?, ?)",
+                post_id, user_id, comment_content, datetime.now(
+                    timezone.utc).strftime('%Y-%m-%d %H:%M:%S')
+            )
+
+        # After posting the comment, redirect to the home page (or the current page)
+        return redirect("/")
 
 
 @application.route("/profile", methods=["GET", "POST"])
 def profile():
     if request.method == "GET":
-        postsFromDB = db.execute("SELECT Post.ID as postID, Post.title as postTitle, Post.imageUrl as imageUrl, User.ID as userID, User.handler, Song.songName, Song.songUrl, Post.createdDate as postDate FROM Post JOIN Song, User ON Post.songID = Song.ID AND User.ID = Post.userID WHERE Post.userID = ?", session["user_id"])
+        postsFromDB = db.execute(
+            "SELECT Post.ID as postID, Post.title as postTitle, Post.imageUrl as imageUrl, User.ID as userID, User.handler, Song.songName, Song.songUrl, Post.createdDate as postDate FROM Post JOIN Song, User ON Post.songID = Song.ID AND User.ID = Post.userID WHERE Post.userID = ?", session["user_id"])
 
         print("Posts in Profile: ", postsFromDB)
         user_info = db.execute(
@@ -98,14 +147,13 @@ def profile():
 
         # print("CURRENT USER :", user)
         # user_info = db.execute(
-            # " SELECT * FROM User INNER JOIN Profile ON User.ID=Profile.UserID WHERE User.ID = ?", session["user_id"])
+        # " SELECT * FROM User INNER JOIN Profile ON User.ID=Profile.UserID WHERE User.ID = ?", session["user_id"])
         # print("USER INFO :", user_info)
         username = user_info[0]["handler"]
         image_url = user_info[0]["imageUrl"]
 
         if not image_url:
             image_url = "../static/avatar.jpeg"
-
 
         followings = db.execute(
             " SELECT * FROM Followers WHERE FollowerID = ?", session["user_id"])

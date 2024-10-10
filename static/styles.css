@@ -1,54 +1,86 @@
+:root {
+  --bg-color: #121212;
+  --card-bg: #1e1e1e;
+  --text-color: #e0e0e0;
+  --secondary-text-color: #9e9e9e;
+  --border-color: #333;
+  --primary-color: #1877f2;
+  --hover-color: #165ecb;
+  --comment-bg: #242424;
+}
+
 body {
-    font-family: Arial, sans-serif;
-    background-color: #f0f2f5;
-    margin: 0;
-    padding: 0;
-    display: flex;
-    flex-direction: column;
-    height: 100vh;
-    background-color: #031106;
-    color: white;
+  background-color: var(--bg-color);
+  color: var(--text-color);
+  font-family: Arial, sans-serif;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
 }
 
-
-textarea {
-    width: 100%;
-    border: 1px solid #ccc;
-    border-radius: 20px;
-    padding: 10px;
-    resize: none;
-    font-family: inherit;
-    font-size: 14px;
+.navbar {
+  background-color: var(--bg-color) !important;
+  padding: 10px 20px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
 }
 
+.navbar-nav {
+  list-style: none;
+  display: flex;
+  align-items: center;
+  gap: 20px; /* Add space between each nav item */
+}
+
+.nav-item {
+  margin: 0; /* Remove default margin, using gap instead */
+}
+
+.nav-link {
+  color: var(--text-color);
+  text-decoration: none;
+  padding: 10px 15px;
+  border-radius: 5px;
+  transition: background-color 0.3s ease;
+}
+
+.nav-link:hover {
+  background-color: var(--hover-color);
+}
+
+.nav-link.active {
+  color: var(--hover-color) !important;
+}
 
 .profile-image {
-    width: 100px; /* Adjust the size as needed */
-    height: 100px; /* Adjust the size as needed */
-    border-radius: 50%;
-    object-fit: cover; /* Ensures the image covers the container properly */
+  width: 100px; /* Adjust the size as needed */
+  height: 100px; /* Adjust the size as needed */
+  border-radius: 50%;
+  object-fit: cover; /* Ensures the image covers the container properly */
 }
 
 .logo-image {
-    border-radius: 50%;
-    object-fit: cover; /* Ensures the image covers the container properly */
+  border-radius: 50%;
+  object-fit: cover; /* Ensures the image covers the container properly */
 }
 .icon {
-    width: 50px;
-    height: 50px;
-    border-radius: 50%;
-    background-color: red;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    position: relative;
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  background-color: red;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: relative;
+  margin-right: 20px;
 }
 
 .icon-checkmark {
-    width: 20px;
-    height: 10px;
-    border-left: 3px solid white;
-    border-bottom: 3px solid white;
-    transform: rotate(-45deg);
-    position: absolute;
+  width: 20px;
+  height: 10px;
+  border-left: 3px solid white;
+  border-bottom: 3px solid white;
+  transform: rotate(-45deg);
+  position: absolute;
 }
