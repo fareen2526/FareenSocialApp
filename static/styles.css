@@ -84,3 +84,17 @@ body {
   transform: rotate(-45deg);
   position: absolute;
 }
+
+.icon-button {
+  background-size: cover; /* Ensures the image covers the button */
+  background-position: center; /* Centers the image in the button */
+  width: 50px; /* Adjust according to your image size */
+  height: 50px; /* Adjust according to your image size */
+  border: none; /* Removes default button border */
+  padding: 0; /* Removes default padding */
+  display: inline-block; /* Keeps the button's inline behavior */
+}
+
+.icon-button::after {
+  display: none; /* Removes the default dropdown arrow */
+}

@@ -2,91 +2,112 @@
 
 <html lang="en">
 
-  <head>
+<head>
 
-    <meta charset="utf-8">
-    <meta name="viewport" content="initial-scale=1, width=device-width">
+  <meta charset="utf-8">
+  <meta name="viewport" content="initial-scale=1, width=device-width">
 
-    <!-- FontAwesome  -->
-    <link
-    rel="stylesheet"
-    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css"
-    />
-    <!-- http://getbootstrap.com/docs/5.3/ -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
-      integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
-      integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
-      crossorigin="anonymous"></script>
-
-    <!-- https://favicon.io/emoji-favicons/money-bag/ -->
-
-    <!-- ADD THE CSS OF EVERY NEW PAGE THAT IS ADDED -->
-    <link href="/static/favicon.ico" rel="icon">
-
-    <link href="/static/styles.css" rel="stylesheet">
-
-    <link href="/static/homepage.css" rel="stylesheet">
-
-    <link href="/static/profile.css" rel="stylesheet">
-
-    <title>Social App by Fareen</title>
-
-  </head>
-
-  <body>
-
-      <nav class="navbar navbar-expand-lg bg-body-tertiary">
-        {% if session["user_id"] %}
-        <div class="container-fluid">
-          <div class="icon">
-            <img src="../static/avatar.jpeg" alt="Avatar" class="logo-image img-thumbnail"></img>
-          </div>
-          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarText" aria-expanded="false" aria-label="Toggle navigation">
-            <span class="navbar-toggler-icon"></span>
-          </button>
-          <div class="collapse navbar-collapse" id="navbarNav">
-            <ul class="navbar-nav">
-              <li class="nav-item">
-                <a class="nav-link" aria-current="page" href="/">Home</a>
-              </li>
-              <li class="nav-item">
-                <a class="nav-link" href="/profile">Profile</a>
-              </li>
-              <li class="nav-item">
-                <a class="nav-link" href="/friends">Friends</a>
-              </li>
-              <li class="nav-item">
-                <div class="input-group">
-                  <span class="input-group-text" id="basic-addon1">@</span>
-                  <input type="text" class="form-control" placeholder="Username" aria-label="Username"
-                    aria-describedby="basic-addon1">
-                </div>
-              </li>
-            </ul>
-          </div>
-        </div>
-        {% else %}
-        <div class="collapse navbar-collapse" id="navbarNav">
-          <ul class="navbar-nav">
-            <li class="nav-item">
-              <a class="nav-link active" aria-current="page" href="/">Home</a>
-            </li>
-            <li class="nav-item">
-              <a class="nav-link" href="/register">Register</a>
-            </li>
-            <li class="nav-item">
-              <a class="nav-link" href="/login">Log In</a>
-            </li>
-          </ul>
-        </div>
-      {% endif %}
-      </nav>
+  <!-- FontAwesome  -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" />
+  <!-- http://getbootstrap.com/docs/5.3/ -->
+  <!-- Latest compiled and minified CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
 
 
-    <main class="container-fluid py-5 text-center">
-      {% block body %}{% endblock %}
-    </main>
-  </body>
+
+
+  <!-- https://favicon.io/emoji-favicons/money-bag/ -->
+
+  <!-- ADD THE CSS OF EVERY NEW PAGE THAT IS ADDED -->
+  <link href="/static/favicon.ico" rel="icon">
+
+  <link href="/static/styles.css" rel="stylesheet">
+
+  <link href="/static/homepage.css" rel="stylesheet">
+
+  <link href="/static/profile.css" rel="stylesheet">
+
+  <title>Social App by Fareen</title>
+
+</head>
+
+<body>
+
+  <nav class="navbar navbar-expand-lg bg-body-tertiary">
+    {% if session["user_id"] %}
+    <div class="container-fluid">
+      <!-- <div class="icon">
+        <img src="../static/avatar.jpeg" alt="Avatar" class="logo-image img-thumbnail"></img>
+      </div> -->
+      <div class="dropdown">
+        <button class="btn btn-secondary dropdown-toggle icon-button" type="button" style="background-image: url('../static/avatar.jpeg');" data-bs-toggle="dropdown" aria-expanded="false">
+          <!-- The text inside the button can be hidden or replaced by the image -->
+        </button>
+        <ul class="dropdown-menu">
+          <li><button class="dropdown-item" type="button">Change the Profile Picture</button></li>
+          <li><button class="dropdown-item" type="button">Another action</button></li>
+          <li><button class="dropdown-item" type="button"><a href="/logout">Log Out</a></button></li>
+        </ul>
+      </div>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
+        aria-controls="navbarText" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navbarNav">
+        <ul class="navbar-nav">
+          <li class="nav-item">
+            <a class="nav-link" aria-current="page" href="/">Home</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="/profile">Profile</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="/friends">Friends</a>
+          </li>
+          <li class="nav-item">
+            <div class="input-group">
+              <span class="input-group-text" id="basic-addon1">@</span>
+              <input type="text" class="form-control" placeholder="Username" aria-label="Username"
+                aria-describedby="basic-addon1">
+            </div>
+          </li>
+        </ul>
+      </div>
+    </div>
+    {% else %}
+    <div class="collapse navbar-collapse" id="navbarNav">
+      <ul class="navbar-nav">
+        <li class="nav-item">
+          <a class="nav-link active" aria-current="page" href="/">Home</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="/register">Register</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="/login">Log In</a>
+        </li>
+      </ul>
+    </div>
+    {% endif %}
+  </nav>
+
+
+  <main class="container-fluid py-5 text-center">
+    {% block body %}{% endblock %}
+  </main>
+
+  <!-- <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js"
+    integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN"
+    crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/popper.js@1.12.9/dist/umd/popper.min.js"
+    integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q"
+    crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.0.0/dist/js/bootstrap.min.js"
+    integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl"
+    crossorigin="anonymous"></script> -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.8/dist/umd/popper.min.js" integrity="sha384-I7E8VVD/ismYTF4hNIPjVp/Zjvgyol6VFvRkX/vR+Vc4jQkC+hVqc2pM8ODewa9r" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.min.js" integrity="sha384-0pUGZvbkm6XF6gxjEnlmuGrJXVbNuzT9qBBavbLwCsOGabYfZo0T0to5eqruptLy" crossorigin="anonymous"></script>
+</body>
 
 </html>

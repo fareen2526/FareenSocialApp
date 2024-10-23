@@ -138,10 +138,6 @@ def index():
 @application.route("/profile", methods=["GET", "POST"])
 def profile():
     if request.method == "GET":
-        postsFromDB = db.execute(
-            "SELECT Post.ID as postID, Post.title as postTitle, Post.imageUrl as imageUrl, User.ID as userID, User.handler, Song.songName, Song.songUrl, Post.createdDate as postDate FROM Post JOIN Song, User ON Post.songID = Song.ID AND User.ID = Post.userID WHERE Post.userID = ?", session["user_id"])
-
-        print("Posts in Profile: ", postsFromDB)
         user_info = db.execute(
             "SELECT name, email, handler, imageUrl FROM User WHERE ID =  ?", session["user_id"])
 
@@ -155,13 +151,72 @@ def profile():
         if not image_url:
             image_url = "../static/avatar.jpeg"
 
-        followings = db.execute(
-            " SELECT * FROM Followers WHERE FollowerID = ?", session["user_id"])
-        followers = db.execute(
-            " SELECT * FROM Followers WHERE FollowingID = ?", session["user_id"])
+         # Fetch all posts with associated comments (if any), regardless of the user who posted them
+        posts_with_comments = db.execute(
+            """
+            SELECT 
+                Post.ID as postID, 
+                Post.imageUrl as imageUrl, 
+                Post.createdDate as postDate, 
+                User.ID as userID, 
+                User.handler, 
+                Song.songName, 
+                Song.songUrl, 
+                Comment.userID as commentUserID, 
+                Comment.content as commentContent, 
+                Comment.createdDate as commentCreatedDate,
+                U.name as commentUserName,
+                U.imageUrl as commentAvatar
+            FROM Post 
+            JOIN Song ON Post.songID = Song.ID 
+            JOIN User ON Post.userID = User.ID
+            LEFT JOIN Comment ON Post.ID = Comment.postID
+            LEFT JOIN User U ON Comment.userID = U.ID
+            WHERE User.ID = ?
+            """, session["user_id"]
+        )
 
-        return render_template("profile.html", username=username, image_url=image_url, posts=postsFromDB)
-    else:
+        posts = []
+        comments_by_post = {}
+
+        # Process the results into a structured dictionary
+        for row in posts_with_comments:
+            # Prepare the post details
+            if not any(p["postID"] == row["postID"] for p in posts):
+                posts.append({
+                    "postID": row["postID"],
+                    "imageUrl": row["imageUrl"],
+                    "userID": row["userID"],
+                    "handler": row["handler"],
+                    "songName": row["songName"],
+                    "songUrl": row["songUrl"],
+                    "postDate": row["postDate"],
+                    "timeElapse": time_ago(datetime.now(timezone.utc) - datetime.strptime(
+                        row["postDate"], '%Y-%m-%d %H:%M:%S').replace(tzinfo=timezone.utc))
+                })
+
+            # If the post has comments, add them to a dictionary based on postID
+            # Ensuring the comment exists (non-null content)
+            if row["commentContent"]:
+                comment = {
+                    "commentUserID": row["commentUserID"],
+                    "content": row["commentContent"],
+                    "createdDate": row["commentCreatedDate"],
+                    "userName": row["commentUserName"],
+                    "avatar": row["commentAvatar"],
+                    "timeElapse": time_ago(datetime.now(timezone.utc) - datetime.strptime(
+                        row["commentCreatedDate"], '%Y-%m-%d %H:%M:%S').replace(tzinfo=timezone.utc))
+                }
+
+                # Collect the comments by postID
+                if row["postID"] not in comments_by_post:
+                    comments_by_post[row["postID"]] = []
+                comments_by_post[row["postID"]].append(comment)
+
+
+        return render_template("profile.html", username=username, image_url=image_url, posts=posts, comments=comments_by_post)
+    
+    if request.method == "POST":
         songUrl = request.form.get("post-songLink")
         slashCounter = 0
         firstIndex = 0
@@ -172,17 +227,32 @@ def profile():
                 firstIndex = index + 1
             if char == "?":
                 secondIndex = index - 1
-        print(f"Index: 1: {firstIndex} - 2:{secondIndex}")
-        print(f"CHAR: 1: {songUrl[firstIndex]} - 2:{songUrl[secondIndex]}")
+        # print(f"Index: 1: {firstIndex} - 2:{secondIndex}")
+        # print(f"CHAR: 1: {songUrl[firstIndex]} - 2:{songUrl[secondIndex]}")
 
         songId = songUrl[firstIndex:secondIndex+1]
 
-        return render_template("profile.html")
+        imageUrl = request.form.get("post-imageUrl")
+        songTitle = request.form.get("post-songName")
+        description = request.form.get("post-description")
+
+        newSongID = db.execute("INSERT INTO Song (songName, songUrl) VALUES(?, ?)",
+                       songTitle, songId)
+     
+        db.execute("INSERT INTO Post (title, imageUrl, songID, userID) VALUES(?, ?, ?, ?)",
+                       description, imageUrl, newSongID, session["user_id"])
+        
+        return redirect("/")
+        
+
+        # return render_template("profile.html")
 
 
 @application.route("/friends", methods=["GET", "POST"])
 def friendPage():
     if request.method == "GET":
+        userInfo = db.execute("SELECT handler FROM User WHERE ID = ?", session["user_id"])
+
         followingUsers = db.execute(
             "SELECT * FROM Followers JOIN Profile ON Followers.FollowerID = Profile.UserID WHERE FollowingID =  ?", session["user_id"])
         # print(followingUsers)
@@ -190,8 +260,14 @@ def friendPage():
         followerUsers = db.execute(
             "SELECT * FROM Followers JOIN Profile ON Followers.FollowingID = Profile.UserID WHERE FollowerID =  ?", session["user_id"])
         print(followerUsers)
-    return render_template("friends.html", followingUsers=followingUsers, followerUsers=followerUsers)
+    return render_template("friends.html", followingUsers=followingUsers, followerUsers=followerUsers, user=userInfo[0])
 
+@application.route("/changeProfilePicture", methods=["GET", "POST"])
+def changeProfilePicture():
+    if request.method == "POST":
+        imageUrl = request.form.get("post-imageUrl")
+        db.execute("UPDATE User SET imageUrl = ? WHERE ID = ?", imageUrl, session["user_id"])
+        return redirect("/")
 
 @application.route("/login", methods=["GET", "POST"])
 def signIn():
@@ -299,6 +375,11 @@ def register():
     else:
         return render_template("register.html")
 
+
+@application.route("/logout", methods=["GET"])
+def logOut():
+    session.clear()
+    return redirect('/')
 
 # run the application.
 if __name__ == "__main__":
