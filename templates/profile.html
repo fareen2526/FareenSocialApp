@@ -6,16 +6,16 @@
   <!-- <img src={{ image_url }} alt="Avatar" class="profile-image"></img> -->
 
   <!-- Button trigger modal -->
-<button type="button" class="btn btn-primary icon-button"  style="background-image: url('{{ image_url }}');"  data-bs-toggle="modal" data-bs-target="#exampleModal">
+<button type="button" class="btn btn-primary icon-button"  style="background-image: url('{{ image_url }}');"  data-bs-toggle="modal" data-bs-target="#changeProfilePictureModal">
 
 </button>
 
 <!-- Modal -->
-<div class="modal fade" id="exampleModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+<div class="modal fade" id="changeProfilePictureModal" tabindex="-1" aria-labelledby="changeProfilePictureModal" aria-hidden="true">
   <div class="modal-dialog">
     <div class="modal-content">
       <div class="modal-header" style="display: flex; justify-content: space-between;">
-        <h1 class="modal-title fs-5" style="color: black;" id="exampleModalLabel">Change Profile Picture</h1>
+        <h1 class="modal-title fs-5" style="color: black;" id="changeProfilePictureModal">Change Profile Picture</h1>
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
       <div class="modal-body">
@@ -39,6 +39,7 @@
   </div>
 
   <div>@{{ username }}</div>
+  {% if current_logged_in_user[0]["handler"] == username %}
 <!-- Button trigger modal -->
 <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#exampleModal">
   Post
@@ -85,6 +86,13 @@
       </div> -->
     </div>
   </div>
+
+  {% else %}
+  <form action="/follow" method="POST" style="display: inline;">
+    <input type="hidden" name="user_id_to_follow" value='{{ user_info["ID"] }}'>
+    <button type="submit" class="btn btn-primary">Follow</button>
+  </form>
+  {% endif %}
 </div>
 
 <div class="post px-5">

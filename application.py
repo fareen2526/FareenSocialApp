@@ -4,8 +4,9 @@ from flask import Flask, render_template, redirect, request, session
 from cs50 import SQL
 from datetime import datetime, timezone
 from flask_session import Session
-from helpers import apology, login_required, lookup, usd, is_int
+from helpers import apology, login_required, usd, is_int
 from werkzeug.security import check_password_hash, generate_password_hash
+import uuid
 
 application = Flask(__name__)
 
@@ -133,25 +134,43 @@ def index():
 
         # After posting the comment, redirect to the home page (or the current page)
         return redirect("/")
+# Midway path
+@application.route("/search_profile", methods=["POST"])
+def search_profile():
+    # Capture the username from the form
+    username = request.form.get("username")
+    
+    # Redirect to the dynamic profile URL
+    return redirect(f"/profile/{username}")
 
+@application.route("/profile")
+def mainProfile():
+    user_info = db.execute(
+            "SELECT ID, name, email, handler, imageUrl FROM User WHERE ID = ?", session["user_id"])
+    return redirect(f'/profile/{user_info[0]["handler"]}')
 
-@application.route("/profile", methods=["GET", "POST"])
-def profile():
+@application.route("/profile/<username>", methods=["GET", "POST"])
+def profile(username):
     if request.method == "GET":
-        user_info = db.execute(
-            "SELECT name, email, handler, imageUrl FROM User WHERE ID =  ?", session["user_id"])
+        current_logged_in_user = db.execute(
+            "SELECT ID, name, email, handler, imageUrl FROM User WHERE ID = ?", session["user_id"])
 
-        # print("CURRENT USER :", user)
-        # user_info = db.execute(
-        # " SELECT * FROM User INNER JOIN Profile ON User.ID=Profile.UserID WHERE User.ID = ?", session["user_id"])
-        # print("USER INFO :", user_info)
-        username = user_info[0]["handler"]
-        image_url = user_info[0]["imageUrl"]
+        # Fetch user info based on the username provided in the URL
+        user_info = db.execute(
+            "SELECT ID, name, email, handler, imageUrl FROM User WHERE handler = ?", username)
+
+        # Check if the user exists
+        if not user_info:
+            return "User not found", 404
+
+        user_info = user_info[0]  # Assuming 'handler' is unique
+        user_id = user_info["ID"]
+        image_url = user_info["imageUrl"]
 
         if not image_url:
             image_url = "../static/avatar.jpeg"
 
-         # Fetch all posts with associated comments (if any), regardless of the user who posted them
+        # Fetch all posts with associated comments for the specified user
         posts_with_comments = db.execute(
             """
             SELECT 
@@ -173,15 +192,14 @@ def profile():
             LEFT JOIN Comment ON Post.ID = Comment.postID
             LEFT JOIN User U ON Comment.userID = U.ID
             WHERE User.ID = ?
-            """, session["user_id"]
+            """, user_id
         )
 
+        # Processing posts and comments remains the same
         posts = []
         comments_by_post = {}
 
-        # Process the results into a structured dictionary
         for row in posts_with_comments:
-            # Prepare the post details
             if not any(p["postID"] == row["postID"] for p in posts):
                 posts.append({
                     "postID": row["postID"],
@@ -195,8 +213,6 @@ def profile():
                         row["postDate"], '%Y-%m-%d %H:%M:%S').replace(tzinfo=timezone.utc))
                 })
 
-            # If the post has comments, add them to a dictionary based on postID
-            # Ensuring the comment exists (non-null content)
             if row["commentContent"]:
                 comment = {
                     "commentUserID": row["commentUserID"],
@@ -208,44 +224,27 @@ def profile():
                         row["commentCreatedDate"], '%Y-%m-%d %H:%M:%S').replace(tzinfo=timezone.utc))
                 }
 
-                # Collect the comments by postID
                 if row["postID"] not in comments_by_post:
                     comments_by_post[row["postID"]] = []
                 comments_by_post[row["postID"]].append(comment)
 
+        return render_template("profile.html", current_logged_in_user=current_logged_in_user, user_info=user_info, username=username, image_url=image_url, posts=posts, comments=comments_by_post)
 
-        return render_template("profile.html", username=username, image_url=image_url, posts=posts, comments=comments_by_post)
-    
-    if request.method == "POST":
-        songUrl = request.form.get("post-songLink")
-        slashCounter = 0
-        firstIndex = 0
-        secondIndex = 0
-        for index, char in enumerate(songUrl):
-            if slashCounter < 5 and char == "/":
-                slashCounter += 1
-                firstIndex = index + 1
-            if char == "?":
-                secondIndex = index - 1
-        # print(f"Index: 1: {firstIndex} - 2:{secondIndex}")
-        # print(f"CHAR: 1: {songUrl[firstIndex]} - 2:{songUrl[secondIndex]}")
 
-        songId = songUrl[firstIndex:secondIndex+1]
+@application.route("/follow", methods=["POST"])
+def follow():
+    user_id_to_follow = request.form.get("user_id_to_follow")
 
-        imageUrl = request.form.get("post-imageUrl")
-        songTitle = request.form.get("post-songName")
-        description = request.form.get("post-description")
+    # Insert the follow relationship into the database
+    try:
+        db.execute("INSERT INTO Followers (ID, FollowingID, FollowerID) VALUES (?, ?, ?)",
+                   str(uuid.uuid4()), session["user_id"], user_id_to_follow)
+        # flash("You are now following the user!", "success")
+    except Exception as e:
+        # flash("An error occurred while trying to follow the user.", "danger")
+        print(e)
 
-        newSongID = db.execute("INSERT INTO Song (songName, songUrl) VALUES(?, ?)",
-                       songTitle, songId)
-     
-        db.execute("INSERT INTO Post (title, imageUrl, songID, userID) VALUES(?, ?, ?, ?)",
-                       description, imageUrl, newSongID, session["user_id"])
-        
-        return redirect("/")
-        
-
-        # return render_template("profile.html")
+    return redirect("/")  # Redirect as needed
 
 
 @application.route("/friends", methods=["GET", "POST"])
